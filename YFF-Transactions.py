@@ -1,18 +1,10 @@
 import mechanize
 from bs4 import BeautifulSoup
+import csv
 import urllib
 import requests
 import time
 import os
-
-# define the 3 things we need - Yahoo league, user token, and API
-# https://pushover.net/
-# token = pushover user key
-# API = pushover application API token - https://pushover.net/apps
-# token and API are 30 character strings
-league = '20314'
-pushover_token = ''
-pushover_api = ''
 
 # touch - use this for touching a file so we know the last time it ran
 def touch(fname, times=None):
@@ -25,11 +17,17 @@ def touch(fname, times=None):
 # opens a URL to push those transactions using Pushover, then logs those 
 # transactions to a file
 def Transactions(league, token, api):
+	# league = yahoo league ID (usually 5-6 numbers)
+	# token = pushover user token = 30 characters
+	# api = pushover app api token = 30 characters
+	# https://pushover.net
+	# https://pushover.net/apps
+
 	# data will have the pushover message
 	data = [] 
 
 	# logfile stores transactions for a league so we can check for new ones
-	logfile = league + '.txt'
+	logfile = 'logs/' + league + '.txt'
 	# URL for scraping transactions
 	URL = 'https://football.fantasysports.yahoo.com/f1/' + league + '/transactions'
 
@@ -103,8 +101,12 @@ starttime=time.time()
 while True:
   # print current time
   print time.ctime()
-  # run the main function
-  Transactions(league, pushover_token, pushover_api)
+  # open leagues.csv and process each line
+  with open('leagues.csv','rb') as csvfile:
+	reader = csv.DictReader(csvfile) # get labels from row 1
+	# run the Transactions function on each row
+        for row in reader:
+                Transactions (row['league'], row['user_key'], row['api_token'])
   # log most recent run time
   touch('lastrun.txt')
   # repeat every 60 seconds
