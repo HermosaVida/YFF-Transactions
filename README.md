@@ -15,9 +15,13 @@ This requires:
 4. leagues.csv
 
 leagues.csv format:
+
 email,league,user_key,api_token
-eague = Yahoo league ID (5-6 numbers)
+
+league = Yahoo league ID (5-6 numbers)
+
 user_key = pushover.net user key
+
 api_token = pushover.net app api token
 
 Todo:
