@@ -42,7 +42,7 @@ def Transactions(league, token, api):
 	# extract the league name from the title of the main league page
 	league_name = league_soup.title.string.split('|')[0]
 
-	print league + ' - ' + league_name
+	print time.ctime() + ' - ' + league + ' - ' + league_name
 
 	# scrape the transactions page
 	html_scrape = br.open(URL).get_data()
@@ -111,7 +111,7 @@ def Transactions(league, token, api):
 starttime=time.time()
 while True:
   # print current time
-  print time.ctime()
+  # print time.ctime()
   # open leagues.csv and process each line
   with open('leagues.csv','rb') as csvfile:
 	reader = csv.DictReader(csvfile) # get labels from row 1
@@ -121,4 +121,4 @@ while True:
   # log most recent run time
   touch('lastrun.txt')
   # repeat every 60 seconds
-  time.sleep(60.0 - ((time.time() - starttime) % 60.0))
+  # time.sleep(60.0 - ((time.time() - starttime) % 60.0))
