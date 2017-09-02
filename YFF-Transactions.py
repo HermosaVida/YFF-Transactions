@@ -29,14 +29,24 @@ def Transactions(league, token, api):
 	# logfile stores transactions for a league so we can check for new ones
 	logfile = 'logs/' + league + '.txt'
 	# URL for scraping transactions
+	mainURL = 'https://football.fantasysports.yahoo.com/f1/' + league
 	URL = 'https://football.fantasysports.yahoo.com/f1/' + league + '/transactions'
 
 	# open html and clean it up
 	br = mechanize.Browser()
 	br.addheaders = [('User-agent', 'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.0.6')]
+
+	# scrape the main league page to extract the leage name
+	league_scrape = br.open(mainURL).get_data()
+	league_soup = BeautifulSoup(league_scrape,"lxml")
+	# extract the league name from the title of the main league page
+	league_name = league_soup.title.string.split('|')[0]
+
+	print league + ' - ' + league_name
+
+	# scrape the transactions page
 	html_scrape = br.open(URL).get_data()
 	soup = BeautifulSoup(html_scrape, "lxml")
-
 	# find tables
 	tables = soup.findAll('table')
 
@@ -73,10 +83,11 @@ def Transactions(league, token, api):
 		# check if this row is in the transactions log file
 		if rowString in open(logfile).read():
 			# if so, skip it
-			print league + ': OLD: ' + rowString
+			pass
+			# print league + ': OLD: ' + rowString
 		else:
 			# if not, send it to Puhsoverlog it to the file
-			print league + ': NEW: ' + rowString
+			# print league + ': NEW: ' + rowString
 
 			# Send to Pushover
 			# API: https://pushover.net/api
@@ -84,7 +95,7 @@ def Transactions(league, token, api):
 			data = [
 			('token', token),
 			('user', api),
-			('title', 'Transaction'),
+			('title', league_name),
 			('html', '1'),
 			('message', rowString),
 			]
