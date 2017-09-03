@@ -23,9 +23,6 @@ def Transactions(league, token, api):
 	# https://pushover.net
 	# https://pushover.net/apps
 
-	# data will have the pushover message
-	data = [] 
-
 	# logfile stores transactions for a league so we can check for new ones
 	logfile = 'logs/' + league + '.txt'
 	# URL for scraping transactions
@@ -39,14 +36,27 @@ def Transactions(league, token, api):
 	# scrape the main league page to extract the leage name
 	league_scrape = br.open(mainURL).get_data()
 	league_soup = BeautifulSoup(league_scrape,"lxml")
+
 	# extract the league name from the title of the main league page
 	league_name = league_soup.title.string.split('|')[0]
 
+	# for error handling in future
+	# if we find u\xa0, this is a private league - exit
+	# -1 means it's a public league and we find a league name
+	public_league = league_name.find(u'\xa0')
+	
+	# if it's -1, it's a public league
+	# if it's anything but -1, there is an error so stop here
+	if public_league is not -1:
+		return
+
+	# for logging
 	print time.ctime() + ' - ' + league + ' - ' + league_name
 
 	# scrape the transactions page
 	html_scrape = br.open(URL).get_data()
 	soup = BeautifulSoup(html_scrape, "lxml")
+
 	# find tables
 	tables = soup.findAll('table')
 
@@ -84,22 +94,23 @@ def Transactions(league, token, api):
 		if rowString in open(logfile).read():
 			# if so, skip it
 			pass
-			# print league + ': OLD: ' + rowString
 		else:
 			# if not, send it to Puhsoverlog it to the file
-			# print league + ': NEW: ' + rowString
 
 			# Send to Pushover
 			# API: https://pushover.net/api
-			# Future: Replace 'Transaction' with league name (scrape this from transaction URL)
-			data = [
+			pushover_data = [
 			('token', token),
 			('user', api),
 			('title', league_name),
 			('html', '1'),
 			('message', rowString),
 			]
-			requests.post('https://api.pushover.net/1/messages.json', data=data)
+			r = requests.post('https://api.pushover.net/1/messages.json', data=pushover_data)
+
+			# r = 200 is OK
+			# if r = 200, OK
+			# if anything but 200, there is an error
 
 			# Log transaction to file
 			f.write(rowString + '\n')
