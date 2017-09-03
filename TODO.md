@@ -19,5 +19,5 @@ If errors happen:
 
 leagues.csv processing:
 
-- [ ] Add league name field (default = blank; if not blank, use it; if blank, fill it (get_league_name function)
-- [ ] Add error field (0 = default = no error; 1 = error in processing = skip next time)
+- [ ] Add league_name field as column 5 (default = blank; if not blank, use it; if blank, fill it (get_league_name function)
+- [ ] Add error field as column 6 (0 = default = no error; 1 = error in processing = skip next time)
