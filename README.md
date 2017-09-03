@@ -23,7 +23,3 @@ league = Yahoo league ID (5-6 numbers)
 user_key = pushover.net user key
 
 api_token = pushover.net app api token
-
-Todo:
-1. Add error checking (If something isn't working, keep going on the other leagues. Main errors to check for are scraping leagues (e.g. the league # doesn't exist or can't be publicly viewed.  Also check to make sure the Pushover API call actually worked.)
-2. Add logging?  Log broken leagues? (For example, add a 1 or 0 to each line of the CSV to determine which lines to process and which to skip?  Or add a logfile with broken leagues and skip those?
