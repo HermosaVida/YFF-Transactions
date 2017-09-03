@@ -16,10 +16,14 @@ This requires:
 
 leagues.csv format:
 
-email,league,user_key,api_token
+email,league,user_key,api_token,league_name,errors
 
 league = Yahoo league ID (5-6 numbers)
 
 user_key = pushover.net user key
 
 api_token = pushover.net app api token
+
+league_name = name of league, scraped if empty
+
+errors = # of errors from previous processes (for skipping/logging)
