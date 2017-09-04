@@ -3,7 +3,7 @@ Big picture todo:
 - [ ] Add error checking - if error encountered then log it, update leagues.csv to skip it (after X times?), and send pushover notification
 - [x] Expand leagues.csv - league_name; error
 - [ ] Improve leagues.csv - check for error previous time; if error, skip (or if X errors in a row, then skip)
-- [ ] League name - get it from leagues.csv; if empty, scrape for it and update leagues.csv
+- [ ] League name - get it from leagues.csv; if empty, scrape for it and update leagues.csv (make this a separate get_league_name function and take it out of the transactions function)
 
 Errors to check:
 
