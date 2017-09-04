@@ -1,10 +1,16 @@
 import mechanize
 from bs4 import BeautifulSoup
 import csv
+import logging
 import urllib
 import requests
 import time
 import os
+
+path = './' # working path
+FORMAT = '%(asctime)s %(levelname)s - %(message)s' # debug.log formatting
+logging.basicConfig(filename= path + 'debug.log',level=logging.INFO,format=FORMAT)
+delay = 60.0 # delay between loops
 
 # touch - use this for touching a file so we know the last time it ran
 def touch(fname, times=None):
@@ -16,17 +22,18 @@ def touch(fname, times=None):
 # checks that text against a log file to identify new transactions,
 # opens a URL to push those transactions using Pushover, then logs those 
 # transactions to a file
-def Transactions(league, token, api):
+def Transactions(league, user_key, api_token):
 	# league = yahoo league ID (usually 5-6 numbers)
-	# token = pushover user token = 30 characters
-	# api = pushover app api token = 30 characters
+	# user_key = pushover user key = 30 characters
+	# api_token = pushover app api token = 30 characters
 	# https://pushover.net
 	# https://pushover.net/apps
 
 	# logfile stores transactions for a league so we can check for new ones
-	logfile = 'logs/' + league + '.txt'
-	# URL for scraping transactions
+	logfile = path + 'logs/' + league + '.txt'
+	# leage URL
 	mainURL = 'https://football.fantasysports.yahoo.com/f1/' + league
+	# URL for scraping transactions
 	URL = 'https://football.fantasysports.yahoo.com/f1/' + league + '/transactions'
 
 	# open html and clean it up
@@ -44,14 +51,12 @@ def Transactions(league, token, api):
 	# if we find u\xa0, this is a private league - exit
 	# -1 means it's a public league and we find a league name
 	public_league = league_name.find(u'\xa0')
-	
+
 	# if it's -1, it's a public league
 	# if it's anything but -1, there is an error so stop here
 	if public_league is not -1:
+		logging.warning('League ' + league + ' is not public.')
 		return
-
-	# for logging
-	print time.ctime() + ' - ' + league + ' - ' + league_name
 
 	# scrape the transactions page
 	html_scrape = br.open(URL).get_data()
@@ -91,28 +96,44 @@ def Transactions(league, token, api):
 			# add that cell to our row
 			rowString = rowString + '\n' + cell
 		# check if this row is in the transactions log file
+		# all previous transactions are logged in the file
 		if rowString in open(logfile).read():
-			# if so, skip it
+			# if so, skip it (it's not new)
 			pass
 		else:
-			# if not, send it to Puhsoverlog it to the file
+			# if not, it's new, send it to Puhsoverlog it to the file
+			# send rowString as the message
 
 			# Send to Pushover
 			# API: https://pushover.net/api
 			pushover_data = [
-			('token', token),
-			('user', api),
+			('token', api_token),
+			('user', user_key),
 			('title', league_name),
 			('html', '1'),
 			('message', rowString),
 			]
 			r = requests.post('https://api.pushover.net/1/messages.json', data=pushover_data)
 
-			# r = 200 is OK
-			# if r = 200, OK
-			# if anything but 200, there is an error
+			# log what we send
+			logging.info ('League : ' + league)
+			logging.info ('User   : ' + user_key)
+			logging.info ('API    : ' + api_token)
+			logging.info ('Message: ' + rowString)
+			logging.info ('Status : ' + str(r.status_code))
+
+			# if r.status_code = 200, everything OK
+			# anything but 200 means there is an error
+			if r.status_code is not 200:
+				logging.warning ('League : ' + league)
+				logging.warning ('User   : ' + user_key)
+				logging.warning ('API    : ' + api_token)
+				logging.warning ('Message: ' + rowString)
+				logging.warning ('Status : ' + str(r.status_code))
+				return
 
 			# Log transaction to file
+			# This is checked each time to see if it's a new transaction
 			f.write(rowString + '\n')
 
 	# Close transactions log file when done
@@ -121,15 +142,13 @@ def Transactions(league, token, api):
 # what time did this python script start
 starttime=time.time()
 while True:
-  # print current time
-  # print time.ctime()
   # open leagues.csv and process each line
-  with open('leagues.csv','rb') as csvfile:
+  with open(path + 'leagues.csv','rb') as csvfile:
 	reader = csv.DictReader(csvfile) # get labels from row 1
 	# run the Transactions function on each row
         for row in reader:
                 Transactions (row['league'], row['user_key'], row['api_token'])
   # log most recent run time
-  touch('lastrun.txt')
+  touch(path + 'lastrun.txt')
   # repeat every 60 seconds
-  # time.sleep(60.0 - ((time.time() - starttime) % 60.0))
+  time.sleep(delay - ((time.time() - starttime) % delay))
