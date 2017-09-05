@@ -7,7 +7,7 @@ import requests
 import time
 import os
 
-path = './' # working path
+path = '' # working path
 FORMAT = '%(asctime)s %(levelname)s - %(message)s' # debug.log formatting
 logging.basicConfig(filename= path + 'debug.log',level=logging.INFO,format=FORMAT)
 delay = 60.0 # delay between loops
@@ -17,24 +17,12 @@ def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
 
-# this is the main function
-# it opens a URL, scrapes the league transactions, turns that into text,
-# checks that text against a log file to identify new transactions,
-# opens a URL to push those transactions using Pushover, then logs those 
-# transactions to a file
-def Transactions(league, user_key, api_token):
+# return a league name based on the league number
+def get_league_name(league):
 	# league = yahoo league ID (usually 5-6 numbers)
-	# user_key = pushover user key = 30 characters
-	# api_token = pushover app api token = 30 characters
-	# https://pushover.net
-	# https://pushover.net/apps
 
-	# logfile stores transactions for a league so we can check for new ones
-	logfile = path + 'logs/' + league + '.txt'
-	# leage URL
-	mainURL = 'https://football.fantasysports.yahoo.com/f1/' + league
 	# URL for scraping transactions
-	URL = 'https://football.fantasysports.yahoo.com/f1/' + league + '/transactions'
+	mainURL = 'https://football.fantasysports.yahoo.com/f1/' + league
 
 	# open html and clean it up
 	br = mechanize.Browser()
@@ -44,8 +32,9 @@ def Transactions(league, user_key, api_token):
 	league_scrape = br.open(mainURL).get_data()
 	league_soup = BeautifulSoup(league_scrape,"lxml")
 
-	# extract the league name from the title of the main league page
+	# extract the league name from the title of the main league page & strip spaces
 	league_name = league_soup.title.string.split('|')[0]
+	league_name = ' '.join(league_name.split())
 
 	# for error handling in future
 	# if we find u\xa0, this is a private league - exit
@@ -53,10 +42,37 @@ def Transactions(league, user_key, api_token):
 	public_league = league_name.find(u'\xa0')
 
 	# if it's -1, it's a public league
-	# if it's anything but -1, there is an error so stop here
+	# if it's anything but -1, there is an error
+	# log it and return an empty string
 	if public_league is not -1:
 		logging.warning('League ' + league + ' is not public.')
-		return
+		return ''
+
+	return league_name
+
+# this is the main function
+# it opens a URL, scrapes the league transactions, turns that into text,
+# checks that text against a log file to identify new transactions,
+# opens a URL to push those transactions using Pushover, then logs those 
+# transactions to a file
+# returns 0 if no errors
+# retruns 1 if error
+def Transactions(league, league_name, user_key, api_token):
+	# league = yahoo league ID (usually 5-6 numbers)
+	# league_name = yahoo league name (string)
+	# user_key = pushover user key = 30 characters
+	# api_token = pushover app api token = 30 characters
+	# https://pushover.net
+	# https://pushover.net/apps
+
+	# logfile stores transactions for a league so we can check for new ones
+	logfile = path + 'logs/' + league + '.txt'
+	# URL for scraping transactions
+	URL = 'https://football.fantasysports.yahoo.com/f1/' + league + '/transactions'
+
+	# open html and clean it up
+	br = mechanize.Browser()
+	br.addheaders = [('User-agent', 'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.0.6')]
 
 	# scrape the transactions page
 	html_scrape = br.open(URL).get_data()
@@ -64,6 +80,11 @@ def Transactions(league, user_key, api_token):
 
 	# find tables
 	tables = soup.findAll('table')
+
+	# if no tables, error
+	if len(tables) is 0:
+		logging.warning('No tables')
+		return 1
 
 	# get the second table - this is the transaction table
 	table=tables[1]
@@ -130,7 +151,7 @@ def Transactions(league, user_key, api_token):
 				logging.warning ('API    : ' + api_token)
 				logging.warning ('Message: ' + rowString)
 				logging.warning ('Status : ' + str(r.status_code))
-				return
+				return 1
 
 			# Log transaction to file
 			# This is checked each time to see if it's a new transaction
@@ -138,17 +159,47 @@ def Transactions(league, user_key, api_token):
 
 	# Close transactions log file when done
 	f.close()
+	return 0 # no errors
 
 # what time did this python script start
 starttime=time.time()
 while True:
-  # open leagues.csv and process each line
-  with open(path + 'leagues.csv','rb') as csvfile:
-	reader = csv.DictReader(csvfile) # get labels from row 1
-	# run the Transactions function on each row
-        for row in reader:
-                Transactions (row['league'], row['user_key'], row['api_token'])
-  # log most recent run time
-  touch(path + 'lastrun.txt')
-  # repeat every 60 seconds
-  time.sleep(delay - ((time.time() - starttime) % delay))
+	# open leagues.csv and process each line
+	f = open(path + 'leagues.csv','rb')
+	reader = csv.DictReader(f) # get labels from row 1
+	headers = reader.fieldnames # capture headers
+	csv_data = [l for l in reader] # store all CSV data
+	csv_data2 = csv_data # make a copy of it to see if anything has changed
+	f.close()
+
+	# loop through each row in CSV file
+        for row in csv_data:
+		# get number of errors
+		if row['errors'] is None:
+			row['errors'] = 0
+		# if league name is empty, fill it
+		if row['league_name'] is None:
+			row['league_name'] = get_league_name (row['league'])
+                # run transactions function & get result
+		t = Transactions (row['league'], row['league_name'], row['user_key'], row['api_token'])
+		# t=0 - no errors
+		# t=1 - errors
+		# total up errors
+		row['errors'] = int(row['errors']) + int(t)
+
+	# did anything chane?
+	if csv_data is csv_data2:
+		pass
+	else:
+		# if something changed (got a new league name OR counted an error)
+		# then log the changes to a new file
+		f2 = open(path + 'new.csv','wb')
+		writer = csv.DictWriter(f2, fieldnames=headers)
+		writer.writeheader() # write headers to row 1
+		writer.writerows(csv_data) # write new data
+		f2.close()
+
+  	touch(path + 'lastrun.txt')
+ 
+ 	# repeat every 60 seconds
+  	time.sleep(delay - ((time.time() - starttime) % delay))
