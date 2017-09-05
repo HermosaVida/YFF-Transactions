@@ -1,9 +1,9 @@
 Big picture todo:
 
-- [ ] Add error checking - if error encountered then log it, update leagues.csv to skip it (after X times?), and send pushover notification
+- [x] Add error checking - if error encountered then log it, update leagues.csv to skip it (after X times?), and send pushover notification
 - [x] Expand leagues.csv - league_name; error
 - [ ] Improve leagues.csv - check for error previous time; if error, skip (or if X errors in a row, then skip)
-- [ ] League name - get it from leagues.csv; if empty, scrape for it and update leagues.csv (make this a separate get_league_name function and take it out of the transactions function)
+- [x] League name - get it from leagues.csv; if empty, scrape for it and update leagues.csv (make this a separate get_league_name function and take it out of the transactions function)
 
 Errors to check:
 
@@ -13,11 +13,11 @@ Errors to check:
 
 If errors happen:
 
-- [ ] Update leagues.csv to include 1 for error (to skip next time - check for this)
+- [x] Update leagues.csv to include 1 for error (to skip next time - check for this)
 - [x] Log it to errors.log
 - [ ] Send different pushover notification (error notification function?)
 
 leagues.csv processing:
 
-- [ ] Add league_name field as column 5 (default = blank; if not blank, use it; if blank, fill it (get_league_name function?)
-- [ ] Add error field as column 6 (0 = default = no error; 1 = error in processing = skip next time; make this integer?  e.g. skip after 5 errors?)
+- [x] Add league_name field as column 5 (default = blank; if not blank, use it; if blank, fill it (get_league_name function?)
+- [x] Add error field as column 6 (0 = default = no error; 1 = error in processing = skip next time; make this integer?  e.g. skip after 5 errors?)
