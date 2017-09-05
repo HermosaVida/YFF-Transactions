@@ -4,6 +4,7 @@ Big picture todo:
 - [x] Expand leagues.csv - league_name; error
 - [ ] Improve leagues.csv - check for error previous time; if error, skip (or if X errors in a row, then skip)
 - [x] League name - get it from leagues.csv; if empty, scrape for it and update leagues.csv (make this a separate get_league_name function and take it out of the transactions function)
+- [ ] When creating new CSV file, replace the original file after updating
 
 Errors to check:
 
